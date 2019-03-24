@@ -15,9 +15,9 @@ from sqlalchemy import create_engine
 import re
 import nltk
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.multioutput import MultiOutputClassifier
-from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
@@ -114,32 +114,40 @@ def build_model():
             ('starting_verb', StartingVerbExtractor())
         ])),
 
-        ('clf', MultiOutputClassifier(AdaBoostClassifier()))
+        ('clf', MultiOutputClassifier(RandomForestClassifier()))
     ])
 
-    return model
+    #parameters = {
+    #   'features__text_pipeline__vect__ngram_range': ((1, 1), (1, 2)),
+     #   'features__text_pipeline__vect__max_df': ( 0.75, 1.0),
+      #  'features__text_pipeline__vect__max_features': (None, 5000, 10000),
+       # 'clf__estimator__n_estimators': [100, 200],
+        #'clf__estimator__min_samples_split': [2, 5]
+#    }
+
+
+    parameters = {
+        'clf__estimator__n_estimators': [50],
+        'clf__estimator__min_samples_split': [2, 3]
+    }
+
+    
+
+
+    cv = GridSearchCV(model, param_grid=parameters, cv=2, verbose=10, n_jobs=-1)
+    return cv
+
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    """
-    Evaluate Model function
-    
-    This function applies ML pipeline to a test set and prints out
-    model performance (accuracy and f1score)
-    
-    Arguments:
-        model -> Scikit ML Pipeline
-        X_test -> test features
-        Y_test -> test labels
-        category_names -> label names (multi-output)
-    """
-    Y_pred = model.predict(X_test)
-    
+    """Uses the best estimator found by grid search to get predictions on the test set and print the results"""
+    # Get best estimator found by grid search
+    best_clf = model.best_estimator_
+    # Get predictions on test set
+    best_predictions = best_clf.predict(X_test)
 
-    overall_accuracy = (Y_pred == Y_test).mean().mean()
-
-    print('Average overall accuracy {0:.2f}% \n'.format(overall_accuracy*100))
-
+    # Print results
+    print(classification_report(Y_test, best_predictions, target_names=category_names))
 
 
 
