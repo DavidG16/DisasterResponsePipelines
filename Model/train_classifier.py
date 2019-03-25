@@ -41,7 +41,7 @@ def load_data(database_filepath):
         category_names -> used for data visualization (app)
     """
     engine = create_engine('sqlite:///'+database_filepath)
-    df = pd.read_sql_table('df',engine)
+    df = pd.read_sql_table('clean_table',engine)
     X = df['message']
     Y = df.iloc[:,4:]
     category_names = Y.columns
@@ -145,6 +145,8 @@ def evaluate_model(model, X_test, Y_test, category_names):
     best_clf = model.best_estimator_
     # Get predictions on test set
     best_predictions = best_clf.predict(X_test)
+    print('Shape best clf: {}'.format(best_clf.shape))
+    print('Shape best predictions {}'.format(best_predictions.shape))
 
     # Print results
     print(classification_report(Y_test, best_predictions, target_names=category_names))
